@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        OPENAI_API_KEY = credentials('openai-api-key')
         SLACK_WEBHOOK_URL = credentials('slack-webhook')
     }
 
@@ -21,15 +20,6 @@ pipeline {
                     curl -sS https://bootstrap.pypa.io/get-pip.py | python3
                     pip install --upgrade pip
                     pip install -r requirements.txt
-                '''
-            }
-        }
-
-        stage('AI Code Review') {
-            steps {
-                sh '''
-                    . venv/bin/activate
-                    python ai_review/code_review.py
                 '''
             }
         }
@@ -59,11 +49,22 @@ pipeline {
             }
         }
 
+        stage('E2E Tests with Cypress') {
+            steps {
+                sh '''
+                    npm install
+                    # Wait for the app to be ready
+                    sleep 5
+                    npx cypress run
+                '''
+            }
+        }
+
         stage('Slack Notification') {
             steps {
                 sh '''
                     . venv/bin/activate
-                    python3 -c "from ai_review.utils import send_slack_message; send_slack_message('✅ Pipeline Success — AI Review + Deployment Completed')"
+                    python3 -c "from ai_review.utils import send_slack_message; send_slack_message('✅ Pipeline Success — E2E Tests + Deployment Completed')"
                 '''
             }
         }
@@ -74,6 +75,12 @@ pipeline {
             sh '''
                 . venv/bin/activate
                 python3 -c "from ai_review.utils import send_slack_message; send_slack_message('❌ Pipeline Failed. Check Jenkins logs.')"
+            '''
+        }
+        always {
+            sh '''
+                docker stop ai-app || true
+                docker rm ai-app || true
             '''
         }
     }
