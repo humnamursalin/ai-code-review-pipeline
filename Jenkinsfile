@@ -9,7 +9,7 @@ pipeline {
     stages {
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/YOUR_USERNAME/ai-code-review-pipeline.git'
+                git branch: 'main', url: 'https://github.com/humnamursalin/ai-code-review-pipeline.git'
             }
         }
 
