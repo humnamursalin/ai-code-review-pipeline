@@ -33,48 +33,26 @@ pipeline {
             }
         }
 
-        stage('Install Cypress System Dependencies') {
+        stage('Install xvfb') {
             steps {
                 sh '''#!/bin/bash
-                    # Check and install Cypress system dependencies for Linux
-                    # Try to detect Ubuntu/Debian version
-                    if [ -f /etc/os-release ]; then
-                        . /etc/os-release
-                        OS=$ID
-                        VERSION=$VERSION_ID
+                    # Check if xvfb is already installed
+                    if command -v xvfb-run &> /dev/null || command -v Xvfb &> /dev/null; then
+                        echo "xvfb is already installed."
                     else
-                        OS="unknown"
-                    fi
-                    
-                    echo "Detected OS: $OS, Version: $VERSION"
-                    
-                    # Check if dependencies are already installed
-                    MISSING_DEPS=""
-                    for dep in libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb; do
-                        if ! dpkg -l | grep -q "^ii  $dep"; then
-                            MISSING_DEPS="$MISSING_DEPS $dep"
-                        fi
-                    done
-                    
-                    if [ -n "$MISSING_DEPS" ]; then
-                        echo "Missing Cypress dependencies:$MISSING_DEPS"
-                        echo "Attempting to install..."
+                        echo "xvfb not found. Attempting to install..."
                         # Try to install without sudo first (in case user has permissions)
-                        apt-get update -qq 2>/dev/null && apt-get install -y $MISSING_DEPS 2>/dev/null || {
+                        apt-get update -qq 2>/dev/null && apt-get install -y xvfb 2>/dev/null || {
                             echo "=========================================="
-                            echo "ERROR: Could not install Cypress dependencies."
+                            echo "ERROR: Could not install xvfb."
                             echo "=========================================="
-                            echo "Cypress requires the following system packages:"
-                            echo "  libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb"
-                            echo ""
-                            echo "Please install them on the Jenkins agent:"
+                            echo "Please install xvfb on the Jenkins agent:"
                             echo "  sudo apt-get update"
-                            echo "  sudo apt-get install -y libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb"
+                            echo "  sudo apt-get install -y xvfb"
                             echo "=========================================="
                             exit 1
                         }
-                    else
-                        echo "All Cypress system dependencies are installed."
+                        echo "xvfb installed successfully."
                     fi
                 '''
             }
@@ -114,9 +92,14 @@ pipeline {
                     # Wait for the app to be ready
                     sleep 3
                     
-                    # Run Cypress tests in Electron headless mode (no Xvfb required)
-                    echo "Running Cypress in Electron headless mode..."
-                    npx cypress run --headless --browser electron
+                    # Run Cypress tests with xvfb-run
+                    if command -v xvfb-run &> /dev/null; then
+                        echo "Running Cypress with xvfb-run..."
+                        xvfb-run -a npx cypress run --headless --browser electron
+                    else
+                        echo "ERROR: xvfb-run not found. Please install xvfb."
+                        exit 1
+                    fi
                     
                     # Stop Flask app
                     kill $FLASK_PID || true
