@@ -39,7 +39,7 @@ pipeline {
                     # Install nvm (Node Version Manager) - doesn't require sudo
                     export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-                    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
                     # Install and use Node.js LTS
                     nvm install --lts
                     nvm use --lts
@@ -58,7 +58,7 @@ pipeline {
                     . venv/bin/activate
                     # Load nvm
                     export NVM_DIR="$HOME/.nvm"
-                    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+                    [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
                     nvm use --lts
                     # Start Flask app in background
                     python app/simple_app.py &
