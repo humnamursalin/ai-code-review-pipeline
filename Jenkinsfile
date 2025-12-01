@@ -16,10 +16,9 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 sh '''
-                    sudo apt-get update -qq
-                    sudo apt-get install -y python3-venv
-                    python3 -m venv venv
+                    python3 -m venv --without-pip venv
                     . venv/bin/activate
+                    curl -sS https://bootstrap.pypa.io/get-pip.py | python3
                     pip install --upgrade pip
                     pip install -r requirements.txt
                 '''
