@@ -35,7 +35,7 @@ pipeline {
 
         stage('Install Node.js and Cypress') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                     # Install nvm (Node Version Manager) - doesn't require sudo
                     export NVM_DIR="$HOME/.nvm"
                     [ -s "$NVM_DIR/nvm.sh" ] || curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -54,7 +54,7 @@ pipeline {
 
         stage('E2E Tests with Cypress') {
             steps {
-                sh '''
+                sh '''#!/bin/bash
                     . venv/bin/activate
                     # Load nvm
                     export NVM_DIR="$HOME/.nvm"
