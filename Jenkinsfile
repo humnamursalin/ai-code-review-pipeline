@@ -33,29 +33,21 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh 'docker build -t ai-demo-app:latest .'
-            }
-        }
-
-        stage('Deploy Container') {
-            steps {
-                sh '''
-                    docker stop ai-app || true
-                    docker rm ai-app || true
-                    docker run -d --name ai-app -p 5000:5000 ai-demo-app:latest
-                '''
-            }
-        }
-
         stage('E2E Tests with Cypress') {
             steps {
                 sh '''
+                    . venv/bin/activate
                     npm install
+                    # Start Flask app in background
+                    python app/simple_app.py &
+                    FLASK_PID=$!
                     # Wait for the app to be ready
-                    sleep 5
-                    npx cypress run
+                    sleep 3
+                    # Run Cypress tests
+                    npx cypress run || EXIT_CODE=$?
+                    # Stop Flask app
+                    kill $FLASK_PID || true
+                    exit ${EXIT_CODE:-0}
                 '''
             }
         }
@@ -64,7 +56,7 @@ pipeline {
             steps {
                 sh '''
                     . venv/bin/activate
-                    python3 -c "from ai_review.utils import send_slack_message; send_slack_message('✅ Pipeline Success — E2E Tests + Deployment Completed')"
+                    python3 -c "from ai_review.utils import send_slack_message; send_slack_message('✅ Pipeline Success — E2E Tests Completed')"
                 '''
             }
         }
@@ -79,8 +71,8 @@ pipeline {
         }
         always {
             sh '''
-                docker stop ai-app || true
-                docker rm ai-app || true
+                # Clean up any running Flask processes
+                pkill -f "python.*simple_app.py" || true
             '''
         }
     }
