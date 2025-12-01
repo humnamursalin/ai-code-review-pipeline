@@ -11,6 +11,5 @@ module.exports = defineConfig({
     video: false,
     screenshotOnRunFailure: true,
   },
-  headless: true,
 })
 
