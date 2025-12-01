@@ -33,6 +33,53 @@ pipeline {
             }
         }
 
+        stage('Install Cypress System Dependencies') {
+            steps {
+                sh '''#!/bin/bash
+                    # Check and install Cypress system dependencies for Linux
+                    # Try to detect Ubuntu/Debian version
+                    if [ -f /etc/os-release ]; then
+                        . /etc/os-release
+                        OS=$ID
+                        VERSION=$VERSION_ID
+                    else
+                        OS="unknown"
+                    fi
+                    
+                    echo "Detected OS: $OS, Version: $VERSION"
+                    
+                    # Check if dependencies are already installed
+                    MISSING_DEPS=""
+                    for dep in libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb; do
+                        if ! dpkg -l | grep -q "^ii  $dep"; then
+                            MISSING_DEPS="$MISSING_DEPS $dep"
+                        fi
+                    done
+                    
+                    if [ -n "$MISSING_DEPS" ]; then
+                        echo "Missing Cypress dependencies:$MISSING_DEPS"
+                        echo "Attempting to install..."
+                        # Try to install without sudo first (in case user has permissions)
+                        apt-get update -qq 2>/dev/null && apt-get install -y $MISSING_DEPS 2>/dev/null || {
+                            echo "=========================================="
+                            echo "ERROR: Could not install Cypress dependencies."
+                            echo "=========================================="
+                            echo "Cypress requires the following system packages:"
+                            echo "  libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb"
+                            echo ""
+                            echo "Please install them on the Jenkins agent:"
+                            echo "  sudo apt-get update"
+                            echo "  sudo apt-get install -y libgtk-3-0 libgbm-dev libnotify-dev libnss3 libxss1 libasound2 libxtst6 xauth xvfb"
+                            echo "=========================================="
+                            exit 1
+                        }
+                    else
+                        echo "All Cypress system dependencies are installed."
+                    fi
+                '''
+            }
+        }
+
         stage('Install Node.js and Cypress') {
             steps {
                 sh '''#!/bin/bash
